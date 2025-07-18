@@ -1,4 +1,3 @@
-
 const endpoint = "https://script.google.com/macros/s/AKfycbwbB-n6Y5m5GUg8cSUd8PgZEWPLxefSkaMD1Eif9jbMqT1hvGvYuaeU4D0icRYwmijz/exec";
 const whatsapp = "2235931151";
 let turnos = [];
@@ -8,6 +7,10 @@ window.onload = async () => {
   try {
     const response = await fetch(endpoint);
     reservados = await response.json();
+
+    // Aseguramos que estén limpios los IDs
+    reservados = reservados.map(t => t.toString().trim());
+
     generarTurnosDisponibles();
     mostrarTurnos();
   } catch (error) {
@@ -16,9 +19,15 @@ window.onload = async () => {
 };
 
 function generarTurnosDisponibles() {
-  const fechas = generarFechas();
-  let turnoNumero = 1;
+  const fechas = [];
+  const hoy = new Date();
+  for (let i = 0; i < 14; i++) {
+    const f = new Date(hoy);
+    f.setDate(f.getDate() + i);
+    if (f.getDay() !== 0) fechas.push(f);
+  }
 
+  let turnoNumero = 1;
   fechas.forEach((fecha) => {
     const bloques = generarBloques(fecha);
     bloques.forEach((hora) => {
@@ -32,21 +41,10 @@ function generarTurnosDisponibles() {
   });
 }
 
-function generarFechas() {
-  const hoy = new Date();
-  const fechas = [];
-  for (let i = 0; i < 14; i++) {
-    const f = new Date(hoy);
-    f.setDate(f.getDate() + i);
-    if (f.getDay() !== 0) fechas.push(f);
-  }
-  return fechas;
-}
-
 function generarBloques(fecha) {
   const bloques = [];
-  let inicio = fecha.getDay() === 6 ? 8 : 6;
-  let fin = fecha.getDay() === 6 ? 16 : 20;
+  const inicio = fecha.getDay() === 6 ? 8 : 6;
+  const fin = fecha.getDay() === 6 ? 16 : 20;
   for (let i = inicio; i < fin; i++) {
     bloques.push(`${i}:00`);
   }
@@ -81,28 +79,7 @@ function reservarTurno(nro, dia, hora) {
   const celular = prompt("Ingresá tu número de celular:");
   if (!nombre || !celular) return alert("Debes completar tus datos para continuar.");
 
-  fetch(endpoint, {
-    method: "POST",
-    body: JSON.stringify({ nroTurno: nro, dia, hora, nombre, celular }),
-    headers: { "Content-Type": "application/json" },
-  })
-    .then((r) => r.json())
-    .then(() => {
-      document.getElementById("mensaje").style.display = "block";
-      actualizarVista(nro);
-      setTimeout(() => {
-        const mensajeWp = `Ya reservé mi turno para el ${dia} a las ${hora}. Mi nombre es ${nombre}.`;
-        window.location.href = `whatsapp://send?phone=54${whatsapp}&text=${encodeURIComponent(mensajeWp)}`;
-      }, 1000);
-    })
-    .catch(() => alert("Hubo un error al guardar el turno."));
+  const mensajeWp = `Ya reservé mi turno para el ${dia} a las ${hora}. Mi nombre es ${nombre}.`;
+  window.location.href = `whatsapp://send?phone=54${whatsapp}&text=${encodeURIComponent(mensajeWp)}`;
 }
 
-function actualizarVista(nro) {
-  const botones = document.querySelectorAll("button");
-  botones.forEach((btn) => {
-    if (btn.parentElement.innerText.includes(nro)) {
-      btn.parentElement.parentElement.remove();
-    }
-  });
-}
